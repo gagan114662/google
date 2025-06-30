@@ -4,38 +4,64 @@ This document provides guidelines and instructions for AI agents (and human deve
 
 ## Overview
 
-Project Chimera aims to be an open-source platform for autonomous AI agents. This specific component is the backend Core API, built with FastAPI.
+Project Chimera aims to be an open-source platform for autonomous AI agents. This specific component is the backend Core API, built with FastAPI, and also includes a local task runner for development and testing of agent capabilities.
 
 Refer to the `Product Requirements Document (PRD) Project Chimera.md` for the full project vision, architecture, and requirements.
 
+## Project Structure Overview
+
+*   **`app/`**: Houses the FastAPI backend application code.
+    *   **`app/tools/`**: Contains low-level, reusable "tools" for agents (e.g., `web_scraper.py`, `file_system.py`, `content_generator.py`). These are designed to be usable by the local task runner as well.
+    *   **`app/skills/`**: Contains higher-level "skills" that compose tools to perform more complex actions (e.g., `web_research.py`, `reporting.py`).
+    *   Other directories (`api/`, `core/`, `models/`, `services/`) are primarily for the FastAPI backend.
+*   **`run_task.py`**: A command-line script for executing local agent tasks. This is the primary way to test tool and skill functionality without needing the full API and UI.
+*   **`workspace/`**: A directory automatically created (and cleaned) by `run_task.py` for file inputs/outputs during local task execution.
+*   **`AGENTS.md`**: This file.
+*   **`README.md`**: General project overview and setup for the local task runner.
+*   **`requirements.txt`**: Python dependencies for both the API and the local runner.
+
 ## Development Setup
 
-1.  **Environment:**
-    *   Ensure you have Python 3.11+ installed.
-    *   It's highly recommended to use a virtual environment (e.g., `venv` or `conda`).
-        ```bash
-        python -m venv venv
-        source venv/bin/activate  # On Windows: venv\Scripts\activate
-        ```
+### 1. Environment
+*   Ensure you have Python 3.11+ installed.
+*   It's highly recommended to use a virtual environment (e.g., `venv` or `conda`):
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
 
-2.  **Dependencies:**
-    *   Install dependencies from `requirements.txt`:
-        ```bash
-        pip install -r requirements.txt
-        ```
+### 2. Dependencies
+*   Install dependencies from `requirements.txt`:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-3.  **Database & Services:**
-    *   This project requires PostgreSQL and Redis instances.
-    *   Ensure they are running and accessible.
-    *   Copy `.env.example` to `.env` and update the `DATABASE_URL` and `REDIS_URL` variables with your connection details.
+### 3. Running Local Agent Tasks (using `run_task.py`)
+This is the recommended way to test and develop individual tools and skills.
+*   The `run_task.py` script provides a CLI to execute predefined local tasks.
+*   It sets up a `workspace/` directory for file operations.
+*   **Usage**:
+    ```bash
+    python run_task.py <task_name>
+    ```
+*   **Available tasks** (see `run_task.py` or `README.md` for the current list, e.g.):
+    *   `example`: A very simple task to show orchestration.
+    *   `excel_lotto`: Generates an Excel file with lottery data in `workspace/`.
+*   You can add new tasks to `run_task.py` to test different tool/skill combinations.
+
+### 4. Database & Services (for the full FastAPI API)
+*   The full FastAPI backend (`app/main.py`) requires PostgreSQL and Redis instances. These are **not required** for running local tasks with `run_task.py` unless a task specifically tries to initialize these API core components.
+*   If you intend to run the FastAPI backend:
+    *   Ensure PostgreSQL and Redis are running and accessible.
+    *   Copy `.env.example` to `.env` and update `DATABASE_URL` and `REDIS_URL`.
         ```bash
         cp .env.example .env
         # Then edit .env with your actual credentials
         ```
 
-4.  **Running the API:**
-    *   The main FastAPI application is in `app/main.py`.
-    *   To run the development server:
+### 5. Running the API (FastAPI backend)
+*   The main FastAPI application is in `app/main.py`.
+*   To run the development server:
         ```bash
         uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
         ```
