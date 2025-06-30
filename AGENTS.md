@@ -11,8 +11,13 @@ Refer to the `Product Requirements Document (PRD) Project Chimera.md` for the fu
 ## Project Structure Overview
 
 *   **`app/`**: Houses the FastAPI backend application code.
-    *   **`app/tools/`**: Contains low-level, reusable "tools" for agents (e.g., `web_scraper.py`, `file_system.py`, `content_generator.py`). These are designed to be usable by the local task runner as well.
-    *   **`app/skills/`**: Contains higher-level "skills" that compose tools to perform more complex actions (e.g., `web_research.py`, `reporting.py`).
+    *   **`app/tools/`**: Contains low-level, reusable "tools" for agents.
+        *   `web_scraper.py`: Includes static (`requests`) and dynamic (`Botasaurus`) content fetching, experimental dynamic Google search, and screenshot capabilities.
+        *   `file_system.py`: For local file operations within the `workspace/`.
+        *   `content_generator.py`: For creating text files, PDFs, Excel sheets.
+    *   **`app/skills/`**: Contains higher-level "skills" that compose tools.
+        *   `web_research.py`: Skills for static/dynamic URL text extraction and static/dynamic web search.
+        *   `reporting.py`: Skills for creating reports.
     *   Other directories (`api/`, `core/`, `models/`, `services/`) are primarily for the FastAPI backend.
 *   **`run_task.py`**: A command-line script for executing local agent tasks. This is the primary way to test tool and skill functionality without needing the full API and UI.
 *   **`workspace/`**: A directory automatically created (and cleaned) by `run_task.py` for file inputs/outputs during local task execution.
@@ -47,7 +52,9 @@ This is the recommended way to test and develop individual tools and skills.
 *   **Available tasks** (see `run_task.py` or `README.md` for the current list, e.g.):
     *   `example`: A very simple task to show orchestration.
     *   `excel_lotto`: Generates an Excel file with lottery data in `workspace/`.
+    *   `dynamic_scrape_test`: Tests dynamic web scraping. **Requires `xvfb-run`** (e.g., `xvfb-run -a python run_task.py dynamic_scrape_test`).
 *   You can add new tasks to `run_task.py` to test different tool/skill combinations.
+*   **Note on Xvfb:** Tasks using dynamic browser automation (Botasaurus) require a virtual display environment like Xvfb when running in headless server environments. Ensure Xvfb is installed (`sudo apt-get install xvfb`) and prefix your command with `xvfb-run -a`.
 
 ### 4. Database & Services (for the full FastAPI API)
 *   The full FastAPI backend (`app/main.py`) requires PostgreSQL and Redis instances. These are **not required** for running local tasks with `run_task.py` unless a task specifically tries to initialize these API core components.

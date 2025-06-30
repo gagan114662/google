@@ -1,8 +1,8 @@
 import argparse
 import os
 import shutil
-from app.tools import file_system, content_generator # web_scraper not needed for this task
-# from app.skills import web_research, reporting # Skills not directly used in this simple task yet
+from app.tools import file_system, content_generator, web_scraper
+from app.skills import web_research # reporting not needed for this new task yet
 
 # Define the workspace directory
 WORKSPACE_DIR = "workspace"
@@ -141,6 +141,86 @@ class TaskOrchestrator:
         for step, res in self.results_history.items():
             print(f"  {step}: {res}")
 
+    def run_dynamic_scrape_test_task(self):
+        """
+        Task to test dynamic web scraping using Botasaurus via skills.
+        """
+        print("\n--- Starting Dynamic Scrape Test Task ---")
+        print("IMPORTANT: This task uses Botasaurus and likely needs to be run with 'xvfb-run python run_task.py dynamic_scrape_test'")
+
+        js_reliant_url = "http://quotes.toscrape.com/js/"
+        output_text_file = "dynamic_scraped_quotes.txt"
+        screenshot_file = "dynamic_scrape_screenshot.png"
+        search_query = "inspirational quotes"
+
+        # Step 1: Extract text dynamically
+        step1_result = self.execute_step(
+            step_name="extract_text_dynamically",
+            function_to_call=web_research.skill_extract_text_from_url,
+            url=js_reliant_url,
+            use_dynamic_fetch=True
+        )
+        extracted_text = None
+        if isinstance(step1_result, str):
+            extracted_text = step1_result
+            print(f"Dynamic text extraction successful (first 200 chars): {extracted_text[:200]}...")
+        elif step1_result is None:
+            print(f"Dynamic text extraction failed or returned None for {js_reliant_url}.")
+        else: # Error dict
+            print(f"Dynamic text extraction failed with error: {step1_result.get('error')}")
+            # Optionally, decide if we should abort the task here
+            # return
+
+        # Step 2: Save extracted text to a file
+        if extracted_text:
+            step2_result = self.execute_step(
+                step_name="save_extracted_text",
+                function_to_call=file_system.write_file,
+                filepath=output_text_file,
+                content=extracted_text
+            )
+            if step2_result: # True if successful
+                print(f"Extracted text saved to workspace/{output_text_file}")
+            else:
+                print(f"Failed to save extracted text.")
+        else:
+            print("Skipping save extracted text step as no text was extracted.")
+            self.results_history["save_extracted_text"] = "Skipped"
+
+
+        # Step 3: Perform a dynamic search
+        step3_result = self.execute_step(
+            step_name="perform_dynamic_search",
+            function_to_call=web_research.skill_perform_dynamic_search,
+            query=search_query,
+            num_results=2
+        )
+        if isinstance(step3_result, list):
+            print(f"Dynamic search for '{search_query}' returned {len(step3_result)} results:")
+            for i, res in enumerate(step3_result):
+                print(f"  {i+1}. {res.get('title', 'N/A')} - {res.get('link', 'N/A')}")
+        else: # Error dict or unexpected
+            print(f"Dynamic search failed or returned unexpected data: {step3_result}")
+
+        # Step 4: Capture a screenshot (optional, can be slow)
+        # Using the web_scraper tool directly for this example
+        step4_result = self.execute_step(
+            step_name="capture_screenshot",
+            function_to_call=web_scraper.capture_screenshot_dynamic,
+            url=js_reliant_url,
+            output_filename=screenshot_file
+        )
+        if step4_result: # True if successful
+            print(f"Screenshot captured and saved to workspace/{screenshot_file}")
+        else:
+            print(f"Failed to capture screenshot.")
+
+
+        print("\n--- Dynamic Scrape Test Task Completed ---")
+        print("All step results:")
+        for step, res in self.results_history.items():
+            print(f"  {step}: {res}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Chimera Local Task Runner")
@@ -160,9 +240,11 @@ def main():
         orchestrator.run_example_task()
     elif args.task_name == "excel_lotto":
         orchestrator.run_excel_lotto_task()
+    elif args.task_name == "dynamic_scrape_test":
+        orchestrator.run_dynamic_scrape_test_task()
     else:
         print(f"Unknown task: {args.task_name}")
-        print("Available tasks: example, excel_lotto")
+        print("Available tasks: example, excel_lotto, dynamic_scrape_test")
 
 if __name__ == "__main__":
     main()

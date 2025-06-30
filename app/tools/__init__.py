@@ -1,7 +1,14 @@
 # This package contains various tools that the agent can use.
 # For example: web_scraper, file_system, content_generator
 
-from .web_scraper import fetch_html, parse_html_to_text, search_google
+from .web_scraper import (
+    fetch_html,
+    parse_html_to_text,
+    search_google,
+    fetch_html_dynamic,
+    capture_screenshot_dynamic,
+    search_google_dynamic
+)
 from .file_system import read_file, write_file, list_files
 from .content_generator import (
     generate_text_report,

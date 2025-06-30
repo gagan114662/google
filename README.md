@@ -16,11 +16,11 @@ The project is currently focused on building out foundational "tools" and "skill
     *   **`app/models/`**: Database models.
     *   **`app/services/`**: Business logic for the API (placeholder).
     *   **`app/tools/`**: Low-level capabilities for agents:
-        *   `web_scraper.py`: Basic web fetching, parsing, and simulated search.
+        *   `web_scraper.py`: Basic web fetching (static via `requests`), parsing, and simulated search. Also includes **dynamic web fetching** (via `Botasaurus`), dynamic search (experimental), and screenshot capture.
         *   `file_system.py`: Reading and writing files to a local `workspace/` directory.
         *   `content_generator.py`: Creating text files, simple PDFs, and Excel spreadsheets.
     *   **`app/skills/`**: Higher-level functions composing tools:
-        *   `web_research.py`: Skills for extracting text from URLs and performing searches.
+        *   `web_research.py`: Skills for extracting text from URLs (static and dynamic), performing searches (static and dynamic).
         *   `reporting.py`: Skills for generating simple reports.
 *   **`run_task.py`**: A command-line script for running predefined local "agent" tasks that demonstrate the use of tools and skills.
 *   **`workspace/`**: A directory created at runtime by `run_task.py` for any input/output files used by tasks. It is cleaned before each run.
@@ -55,8 +55,22 @@ python run_task.py <task_name>
 
 *   **`example`**: A simple placeholder task that demonstrates the orchestration flow.
 *   **`excel_lotto`**: Generates an Excel file (`workspace/italian_lottery_games.xlsx`) with information about Italian lottery games.
+*   **`dynamic_scrape_test`**: Tests dynamic web scraping using Botasaurus. Fetches content from a JS-reliant site (`http://quotes.toscrape.com/js/`), saves it, performs a dynamic search, and takes a screenshot. **Requires `xvfb-run` to execute properly in headless environments.**
 
-### Example
+### Usage Examples
+
+**Basic Task:**
+```bash
+python run_task.py excel_lotto
+```
+This will create the `workspace` directory (if it doesn't exist, or clean it if it does), run the `excel_lotto` task, and output status messages. The resulting Excel file will be in `workspace/italian_lottery_games.xlsx`.
+
+**Task Requiring Dynamic Scraping (needs Xvfb):**
+```bash
+xvfb-run -a python run_task.py dynamic_scrape_test
+```
+
+## Development of the FastAPI Backend
 
 ```bash
 python run_task.py excel_lotto
