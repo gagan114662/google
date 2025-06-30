@@ -59,7 +59,8 @@ python run_task.py <task_name>
 *   **`excel_lotto`**: Generates an Excel file (`workspace/italian_lottery_games.xlsx`) with information about Italian lottery games.
 *   **`dynamic_scrape_test`**: Tests dynamic web scraping using Botasaurus. Fetches content from a JS-reliant site (`http://quotes.toscrape.com/js/`), saves it, performs a dynamic search, and takes a screenshot. **Requires `xvfb-run` to execute properly in headless environments.**
 *   **`local_llm_test_summary`**: Tests text summarization using a locally running Ollama model. **Requires Ollama to be running with a model (e.g., `deepseek-r1:8b` or `orca-mini:latest`).**
-*   **`scrape_forums --query \"your search query\"`**: A task that attempts to find forum discussions related to a query, scrape content from a couple of links, summarize them using the local LLM, and save a report. **Requires `xvfb-run` and Ollama.** (Note: The reliability of finding and parsing forum links from Google search is currently low and needs improvement).
+*   **`scrape_forums --query \"your search query\"`**: A task that attempts to find forum discussions related to a query, scrape content from a couple of links, summarize them using the local LLM, and save a report. **Requires `xvfb-run` and Ollama.**
+    *   **VERY IMPORTANT NOTE**: The reliability of finding and parsing forum links using the built-in Google Search scraping (`search_google_dynamic` and `search_google`) is **extremely low and currently often fails to return results**. Google's Search Engine Results Page (SERP) is heavily protected and changes frequently, making direct scraping very difficult. This task is included as a demonstration of orchestrating multiple tools/skills, but its success heavily depends on the search step, which is unreliable. For robust search, a dedicated Search API would be necessary.
 
 ### Setup for Local LLM (Ollama)
 

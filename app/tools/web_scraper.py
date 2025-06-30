@@ -109,62 +109,84 @@ def search_google(query: str, num_results: int = 5) -> list[dict]:
     # or a simpler search engine that's easier to scrape.
     # For this example, we'll stick to a very basic attempt on Google.
 
-    # Example: find <a> tags with an href attribute that starts with /url?q= (Google's redirect)
-    # and also have an <h3> child for the title.
+    parsed_results_count = 0
 
-    # Let's try a simpler approach: Find all <a> tags with <h3> inside.
-    # This is very generic.
+    # Try block-based parsing first, similar to dynamic but on static HTML
+    potential_block_selectors = ["div.Gx5Zad", "div.tF2Cxc", "div.g"] # Simplified list for static
+    found_blocks_static = []
+    for selector in potential_block_selectors:
+        found_blocks_static = soup.select(selector)
+        if found_blocks_static:
+            print(f"  [WebScraper-Static] Found {len(found_blocks_static)} blocks using selector '{selector}'")
+            break
 
-    # A common pattern for search result links is an `<a>` tag
-    # with an `<h3>` tag inside it for the title.
+    if found_blocks_static:
+        for block in found_blocks_static:
+            link_tag = block.find('a', href=True)
+            if not link_tag: continue
+            href = link_tag['href']
+            title_tag = link_tag.find('h3')
+            title_text = title_tag.get_text(strip=True) if title_tag else link_tag.get_text(strip=True)
+            if not title_text: continue
 
-    # We'll try to find `div` elements that seem to encapsulate a single search result.
-    # Google's class names are volatile. `div.g` used to be common.
-    # Let's try to find `<a>` tags with `<h3>` as direct children,
-    # as these are often titles.
-
-    # A simple approach that might work for some basic Google layouts:
-    for link_tag in soup.find_all('a'):
-        href = link_tag.get('href')
-        h3_tag = link_tag.find('h3') # Check for an h3 inside the link
-
-        if href and h3_tag:
-            title = h3_tag.get_text(strip=True)
-            # Filter out internal Google links and ensure it's an absolute URL
-            if href.startswith("http") and "google.com" not in href:
-                results.append({"title": title, "link": href})
-            elif href.startswith("/url?q="): # Google redirect URL
-                # Extract the actual URL from the query parameters
+            actual_link = None
+            if href.startswith("http") and "google.com" not in href: actual_link = href
+            elif href.startswith("/url?q="):
                 from urllib.parse import parse_qs, urlparse
                 parsed_href = urlparse(href)
                 qs_params = parse_qs(parsed_href.query)
-                if 'q' in qs_params and qs_params['q'][0].startswith("http"):
-                    actual_link = qs_params['q'][0]
-                    results.append({"title": title, "link": actual_link})
+                if 'q' in qs_params and qs_params['q'][0].startswith("http"): actual_link = qs_params['q'][0]
 
-        if len(results) >= num_results:
-            break
+            if actual_link and not any(r['link'] == actual_link for r in results):
+                results.append({"title": title_text, "link": actual_link, "snippet": ""}) # Snippet unlikely in static
+                parsed_results_count += 1
+                if parsed_results_count >= num_results: break
+        if parsed_results_count > 0:
+             print(f"  [WebScraper-Static] Parsed {parsed_results_count} results using block-based method.")
+             return results[:num_results]
 
-    if not results:
-        print("  [WebScraper] Could not parse search results using the primary method. Trying generic link search.")
-        # Fallback: very basic, just find links with some text if the above fails.
-        # This is less accurate.
+    # Fallback to original simpler parsing if block-based fails or yields too few
+    print("  [WebScraper-Static] Block-based parsing yielded no/few results, trying original generic parsing.")
+    for link_tag in soup.find_all('a'): # Original generic approach
+        href = link_tag.get('href')
+        h3_tag = link_tag.find('h3')
+
+        if href and h3_tag:
+            title = h3_tag.get_text(strip=True)
+            actual_link = None
+            if href.startswith("http") and "google.com" not in href: actual_link = href
+            elif href.startswith("/url?q="):
+                from urllib.parse import parse_qs, urlparse
+                parsed_href = urlparse(href)
+                qs_params = parse_qs(parsed_href.query)
+                if 'q' in qs_params and qs_params['q'][0].startswith("http"): actual_link = qs_params['q'][0]
+
+            if actual_link and title and not any(r['link'] == actual_link for r in results):
+                results.append({"title": title, "link": actual_link, "snippet": ""})
+                parsed_results_count +=1
+                if parsed_results_count >= num_results: break
+        if parsed_results_count >= num_results: break
+
+    if not results and parsed_results_count < num_results: # Further fallback if still not enough
+        print("  [WebScraper-Static] Primary methods yielded no/few results. Trying broad link search.")
         for link_tag in soup.find_all('a', href=True):
+            if parsed_results_count >= num_results: break
             href = link_tag['href']
             title = link_tag.get_text(strip=True)
-            if href.startswith("http") and "google.com" not in href and title:
-                 results.append({"title": title, "link": href})
+            actual_link = None
+            if href.startswith("http") and "google.com" not in href and title: actual_link = href
             elif href.startswith("/url?q="):
                  from urllib.parse import parse_qs, urlparse
                  parsed_href = urlparse(href)
                  qs_params = parse_qs(parsed_href.query)
-                 if 'q' in qs_params and qs_params['q'][0].startswith("http") and title:
-                    actual_link = qs_params['q'][0]
-                    results.append({"title": title, "link": actual_link})
-            if len(results) >= num_results:
-                break
+                 if 'q' in qs_params and qs_params['q'][0].startswith("http") and title: actual_link = qs_params['q'][0]
 
-    print(f"  [WebScraper] Found {len(results)} results (simulated/parsed).")
+            if actual_link and title and not any(r['link'] == actual_link for r in results):
+                 results.append({"title": title, "link": actual_link, "snippet": ""})
+                 parsed_results_count +=1
+                 if parsed_results_count >= num_results: break
+
+    print(f"  [WebScraper-Static] Found {len(results)} results (simulated/parsed).")
     return results[:num_results]
 
 
@@ -281,6 +303,20 @@ def search_google_dynamic(query: str, num_results: int = 5) -> list[dict]:
         print("  [WebScraper-Dynamic] Failed to fetch Google search results page dynamically.")
         return []
 
+    # Save the raw HTML for inspection
+    # Ensure WORKSPACE_DIR is accessible or handled by file_system tool logic if used here
+    # For simplicity, directly writing here assuming WORKSPACE_DIR is "workspace" in root
+    # and run_task.py (or direct test) ensures it exists.
+    # Make sure file_system tool is imported if using its write_file
+    from .file_system import write_file as fs_write_file # Use a distinct name to avoid confusion
+    serp_html_filename = os.path.join(WORKSPACE_DIR, f"google_serp_raw_{query.replace(' ', '_')[:30]}.html")
+    try:
+        # fs_write_file expects relative path to workspace, so just the filename part
+        fs_write_file(os.path.basename(serp_html_filename), html_content)
+        print(f"  [WebScraper-Dynamic] Saved raw SERP HTML to {serp_html_filename} for inspection.")
+    except Exception as e:
+        print(f"  [WebScraper-Dynamic] Failed to save raw SERP HTML: {e}")
+
     soup = BeautifulSoup(html_content, 'html.parser')
     results = []
 
@@ -297,22 +333,69 @@ def search_google_dynamic(query: str, num_results: int = 5) -> list[dict]:
 
     # Let's try to find hyperlink tags that have an H3 child, a common pattern.
     # We will look for `a` tags that have `h3` and a `href` starting with http or /url?q=
-    count = 0
-    for link_tag in soup.find_all('a', href=True):
-        h3_tag = link_tag.find('h3')
-        if not h3_tag:
+
+    # --- New Parsing Logic based on hypothetical analysis ---
+    # Google often wraps organic search results in `div` elements.
+    # Common classes seen for these divs include 'g', 'Gx5Zad', 'tF2Cxc', 'VwiC3b', etc.
+    # Inside these, there's usually an `a` tag with the main link, and an `h3` tag for the title.
+    # Let's try a more specific approach by first finding these blocks.
+    # This is still fragile but targets common structures.
+
+    # Attempt to find result blocks. This list of selectors might need updating.
+    # Prioritize selectors that seem more specific or stable if identified from manual inspection.
+    # Example: 'div.tF2Cxc', 'div.Gx5Zad', 'div.g'
+    # For this example, let's assume 'div.Gx5Zad' was found to be a somewhat reliable container for now.
+    # If that fails, we can try a broader 'div.g'.
+
+    # Using a list of potential container selectors to try in order.
+    # This is a common strategy when dealing with frequently changing class names.
+    # The user would ideally identify these from the saved HTML.
+    # For now, I'll use some common historical ones.
+
+    # Note: The most reliable method for scraping Google is using their official Custom Search API.
+    # Direct scraping is against their ToS and is actively combated.
+    # This implementation is for educational/experimental purposes with local tools.
+
+    potential_block_selectors = [
+        "div.Gx5Zad", # A common selector for a while
+        "div.tF2Cxc", # Another common one
+        "div.g",      # A more generic one
+        # Add more selectors here if identified from manual inspection
+    ]
+
+    parsed_results_count = 0
+    found_blocks = []
+    for selector in potential_block_selectors:
+        found_blocks = soup.select(selector)
+        if found_blocks:
+            print(f"  [WebScraper-Dynamic] Found {len(found_blocks)} blocks using selector '{selector}'")
+            break # Use the first selector that yields results
+
+    if not found_blocks:
+        print("  [WebScraper-Dynamic] Could not find any recognized search result blocks with common selectors.")
+
+    for block in found_blocks:
+        link_tag = block.find('a', href=True)
+        if not link_tag:
             continue
 
-        title = h3_tag.get_text(strip=True)
         href = link_tag['href']
+        title_tag = link_tag.find('h3') # Titles are often in h3 within the link
 
-        if not title: # Skip if title is empty
+        if not title_tag: # Fallback: sometimes title might be directly in link or another nearby tag
+            title_text = link_tag.get_text(strip=True) # Less reliable
+        else:
+            title_text = title_tag.get_text(strip=True)
+
+        if not title_text: # Skip if no title found
             continue
 
         actual_link = None
         if href.startswith("http") and "google.com" not in href:
+            # Check if it's a direct link and not a Google sub-property or ad redirect
+            # A more sophisticated check might involve domain parsing.
             actual_link = href
-        elif href.startswith("/url?q="):
+        elif href.startswith("/url?q="): # Google redirect URL
             from urllib.parse import parse_qs, urlparse
             parsed_href = urlparse(href)
             qs_params = parse_qs(parsed_href.query)
@@ -322,16 +405,40 @@ def search_google_dynamic(query: str, num_results: int = 5) -> list[dict]:
         if actual_link:
             # Basic deduplication based on link
             if not any(r['link'] == actual_link for r in results):
-                 results.append({"title": title, "link": actual_link})
-                 count += 1
-                 if count >= num_results:
+                 # Optionally, try to find a snippet
+                snippet = ""
+                # Snippet selectors are also volatile, e.g., 'div.VwiC3b', 'span.st'
+                # For example, find a span with class 'VwiC3b' inside the block
+                snippet_tag_v1 = block.find('div', class_='VwiC3b') # Common new structure
+                snippet_tag_v2 = block.find('span', class_='st') # Older structure
+                snippet_tag_v3 = block.find('div', class_='MUxGbd') # Another one
+
+                if snippet_tag_v1:
+                    snippet = snippet_tag_v1.get_text(separator=' ', strip=True)
+                elif snippet_tag_v2:
+                    snippet = snippet_tag_v2.get_text(separator=' ', strip=True)
+                elif snippet_tag_v3: # Sometimes the whole block text if specific snippet not found
+                    # More careful snippet extraction needed here to avoid grabbing too much
+                    nested_text_div = snippet_tag_v3.find('div', class_='yDYNvb') # Often holds the main text
+                    if nested_text_div:
+                        snippet = nested_text_div.get_text(separator=' ', strip=True)
+                    else: # Fallback to a simpler text grab from a known class if specific snippet structure not found
+                        span_snippet = snippet_tag_v3.find('span') # Very generic
+                        if span_snippet:
+                             snippet = span_snippet.get_text(separator=' ', strip=True)
+
+
+                results.append({"title": title_text, "link": actual_link, "snippet": snippet[:250] + "..." if snippet else ""})
+                parsed_results_count += 1
+                if parsed_results_count >= num_results:
                     break
 
     if not results:
-        print("  [WebScraper-Dynamic] Could not parse dynamic search results using primary method.")
-        # Add more fallback parsing logic here if necessary, similar to the static search_google.
+        print("  [WebScraper-Dynamic] Could not parse dynamic search results using refined block-based method.")
+        # Consider falling back to the older, more generic link finding if this fails, or just return empty.
+        # For now, let's indicate failure if block-based parsing doesn't work.
 
-    print(f"  [WebScraper-Dynamic] Found {len(results)} dynamic search results.")
+    print(f"  [WebScraper-Dynamic] Found {len(results)} dynamic search results after parsing.")
     return results[:num_results]
 
 
