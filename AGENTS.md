@@ -56,6 +56,7 @@ This is the recommended way to test and develop individual tools and skills.
     *   `excel_lotto`: Generates an Excel file with lottery data in `workspace/`.
     *   `dynamic_scrape_test`: Tests dynamic web scraping. **Requires `xvfb-run`** (e.g., `xvfb-run -a python run_task.py dynamic_scrape_test`).
     *   `local_llm_test_summary`: Tests local LLM text summarization. **Requires Ollama service and a model.**
+    *   `scrape_forums --query "<your_query>"`: Attempts to find, scrape, and summarize forum discussions. **Requires `xvfb-run` and Ollama.** Example: `xvfb-run -a python run_task.py scrape_forums --query "favorite python libraries"`
 *   You can add new tasks to `run_task.py` to test different tool/skill combinations.
 *   **Note on Xvfb:** Tasks using dynamic browser automation (Botasaurus) require a virtual display environment like Xvfb when running in headless server environments. Ensure Xvfb is installed (`sudo apt-get install xvfb`) and prefix your command with `xvfb-run -a`.
 *   **Note on Ollama for Local LLM:**

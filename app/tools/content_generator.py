@@ -108,49 +108,57 @@ def create_excel_spreadsheet(filename: str, data: list[list[any]], headers: list
         print(f"  [ContentGenerator] Error creating Excel spreadsheet {safe_filepath}: {e}")
         return False
 
-# Placeholder functions for more complex text generation (summaries, emails)
-def generate_summary_placeholder(text_to_summarize: str, max_length: int = 150) -> str:
+def generate_summary_local_llm(text_to_summarize: str, max_length: int = 150, custom_system_prompt: str = None) -> str | None:
     """
-    Placeholder for a text summarization function.
-    Currently returns a truncated version of the original text.
+    Generates a summary of the given text using a local LLM via Ollama.
+    Falls back to truncation if Ollama is unavailable or fails.
+    Args:
+        text_to_summarize: The text to be summarized.
+        max_length: Approximate target maximum length for the summary (in characters).
+        custom_system_prompt: An optional custom system prompt to override the default.
+                              It can use {max_length} for formatting.
     """
-    print("  [ContentGenerator] Generating summary (placeholder)...")
-    if not text_to_summarize:
-        return ""
-    summary = text_to_summarize[:max_length]
-    if len(text_to_summarize) > max_length:
-        summary += "..."
+    logger.info(f"  [ContentGenerator] Generating summary for text (length: {len(text_to_summarize)}, target summary length: ~{max_length} chars)...")
+
     if not OLLAMA_IS_AVAILABLE():
         logger.warning("Ollama not available. Falling back to placeholder summary (truncation).")
         summary = text_to_summarize[:max_length]
-        if len(text_to_summarize) > max_length and len(text_to_summarize) > 0:
+        if len(text_to_summarize) > max_length and len(text_to_summarize) > 0: # Check if text_to_summarize is not empty
             summary += "..."
         return summary
 
-    system_prompt_summary = "You are an expert summarization assistant. Summarize the following text concisely, capturing the main points. The summary should be approximately {max_length} characters or less if possible, but prioritize clarity."
-    prompt = f"Please summarize the following text:\n\n---\n{text_to_summarize}\n---\n\nSummary:"
+    # Default system prompt specialized for summarization
+    default_system_prompt = (
+        "You are an expert AI assistant tasked with summarizing text, which may include forum discussions. "
+        "Your goal is to extract the key topics, main opinions or arguments, and any apparent consensus or significant disagreements. "
+        "Provide a concise and informative summary. If the text is very short or lacks substance, indicate that briefly. "
+        "The summary should ideally be around {max_length} characters, but prioritize clarity and completeness of key points over strict length adherence."
+    )
+
+    final_system_prompt_template = custom_system_prompt if custom_system_prompt else default_system_prompt
+    final_system_prompt_formatted = final_system_prompt_template.format(max_length=max_length)
+
+    user_prompt = f"Please summarize the following text:\n\n---\n{text_to_summarize}\n---\n\nSummary:"
 
     model_to_use = get_default_model_name()
-    logger.info(f"  [ContentGenerator] Requesting summary from Ollama model: {model_to_use}")
+    logger.info(f"  [ContentGenerator] Requesting summary from Ollama model: {model_to_use} with system prompt: \"{final_system_prompt_formatted[:100]}...\"")
 
-    summary = ollama_client.generate_text(
-        prompt=prompt,
+    llm_summary = ollama_client.generate_text(
+        prompt=user_prompt,
         model_name=model_to_use,
-        system_prompt=system_prompt_summary.format(max_length=max_length),
+        system_prompt=final_system_prompt_formatted,
         temperature=0.3 # Lower temperature for more factual summaries
     )
 
-    if summary:
-        logger.info(f"  [ContentGenerator] Summary received from LLM.")
-        # Optional: could try to enforce max_length post-generation if needed, but prompt is better
-        return summary.strip()
+    if llm_summary:
+        logger.info("  [ContentGenerator] Summary received from LLM.")
+        return llm_summary.strip()
     else:
         logger.warning("  [ContentGenerator] LLM summary generation failed. Falling back to truncation.")
-        summary = text_to_summarize[:max_length]
-        if len(text_to_summarize) > max_length and len(text_to_summarize) > 0:
-            summary += "..."
-        return summary
-
+        summary_fallback = text_to_summarize[:max_length]
+        if len(text_to_summarize) > max_length and len(text_to_summarize) > 0: # Check if text_to_summarize is not empty
+            summary_fallback += "..."
+        return summary_fallback
 
 def generate_email_draft_local_llm(to: str, subject: str, body_prompt: str, email_type: str = "professional first contact") -> dict:
     """

@@ -59,6 +59,7 @@ python run_task.py <task_name>
 *   **`excel_lotto`**: Generates an Excel file (`workspace/italian_lottery_games.xlsx`) with information about Italian lottery games.
 *   **`dynamic_scrape_test`**: Tests dynamic web scraping using Botasaurus. Fetches content from a JS-reliant site (`http://quotes.toscrape.com/js/`), saves it, performs a dynamic search, and takes a screenshot. **Requires `xvfb-run` to execute properly in headless environments.**
 *   **`local_llm_test_summary`**: Tests text summarization using a locally running Ollama model. **Requires Ollama to be running with a model (e.g., `deepseek-r1:8b` or `orca-mini:latest`).**
+*   **`scrape_forums --query \"your search query\"`**: A task that attempts to find forum discussions related to a query, scrape content from a couple of links, summarize them using the local LLM, and save a report. **Requires `xvfb-run` and Ollama.** (Note: The reliability of finding and parsing forum links from Google search is currently low and needs improvement).
 
 ### Setup for Local LLM (Ollama)
 
@@ -95,6 +96,11 @@ xvfb-run -a python run_task.py dynamic_scrape_test
 # Ensure Ollama is running with a model like 'deepseek-r1:8b' or 'orca-mini'
 # export DEFAULT_OLLAMA_MODEL="deepseek-r1:8b" # Optional: to set your preferred model
 python run_task.py local_llm_test_summary
+```
+
+**Scraping Forums Task (requires Xvfb and Ollama):**
+```bash
+xvfb-run -a python run_task.py scrape_forums --query "best programming languages for beginners"
 ```
 
 ## Development of the FastAPI Backend
