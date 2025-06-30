@@ -14,7 +14,7 @@ from .content_generator import (
     generate_text_report,
     generate_pdf_report_simple,
     create_excel_spreadsheet,
-    generate_summary_placeholder,
-    generate_email_draft_placeholder
+    generate_summary_local_llm,
+    generate_email_draft_local_llm
 )
 # Add other tool imports as they are created

@@ -242,9 +242,11 @@ def main():
         orchestrator.run_excel_lotto_task()
     elif args.task_name == "dynamic_scrape_test":
         orchestrator.run_dynamic_scrape_test_task()
+    elif args.task_name == "local_llm_test_summary":
+        orchestrator.run_local_llm_test_summary_task()
     else:
         print(f"Unknown task: {args.task_name}")
-        print("Available tasks: example, excel_lotto, dynamic_scrape_test")
+        print("Available tasks: example, excel_lotto, dynamic_scrape_test, local_llm_test_summary")
 
 if __name__ == "__main__":
     main()

@@ -18,10 +18,12 @@ The project is currently focused on building out foundational "tools" and "skill
     *   **`app/tools/`**: Low-level capabilities for agents:
         *   `web_scraper.py`: Basic web fetching (static via `requests`), parsing, and simulated search. Also includes **dynamic web fetching** (via `Botasaurus`), dynamic search (experimental), and screenshot capture.
         *   `file_system.py`: Reading and writing files to a local `workspace/` directory.
-        *   `content_generator.py`: Creating text files, simple PDFs, and Excel spreadsheets.
+        *   `content_generator.py`: Creating text files, simple PDFs, and Excel spreadsheets. **Now includes local LLM integration (via Ollama) for text summarization and email drafting, with fallbacks.**
     *   **`app/skills/`**: Higher-level functions composing tools:
         *   `web_research.py`: Skills for extracting text from URLs (static and dynamic), performing searches (static and dynamic).
         *   `reporting.py`: Skills for generating simple reports.
+    *   **`app/llm/`**: Client for interacting with local LLMs.
+        *   `ollama_client.py`: Client for Ollama service.
 *   **`run_task.py`**: A command-line script for running predefined local "agent" tasks that demonstrate the use of tools and skills.
 *   **`workspace/`**: A directory created at runtime by `run_task.py` for any input/output files used by tasks. It is cleaned before each run.
 *   **`AGENTS.md`**: Guidelines for AI agents (and human developers) working on this codebase.
@@ -56,6 +58,24 @@ python run_task.py <task_name>
 *   **`example`**: A simple placeholder task that demonstrates the orchestration flow.
 *   **`excel_lotto`**: Generates an Excel file (`workspace/italian_lottery_games.xlsx`) with information about Italian lottery games.
 *   **`dynamic_scrape_test`**: Tests dynamic web scraping using Botasaurus. Fetches content from a JS-reliant site (`http://quotes.toscrape.com/js/`), saves it, performs a dynamic search, and takes a screenshot. **Requires `xvfb-run` to execute properly in headless environments.**
+*   **`local_llm_test_summary`**: Tests text summarization using a locally running Ollama model. **Requires Ollama to be running with a model (e.g., `deepseek-r1:8b` or `orca-mini:latest`).**
+
+### Setup for Local LLM (Ollama)
+
+To use the local LLM capabilities (like summarization or email drafting):
+
+1.  **Install Ollama**: Follow instructions at [https://ollama.com](https://ollama.com). For Linux:
+    ```bash
+    curl -fsSL https://ollama.com/install.sh | sh
+    ```
+2.  **Pull a Model**: It's recommended to use a DeepSeek model for better quality. The `deepseek-r1:8b` model is a good balance, or `deepseek-r1:7b` / `deepseek-r1:1.5b` for lighter needs.
+    ```bash
+    ollama pull deepseek-r1:8b
+    # or for a smaller, quick test model (used as a fallback default in the code if DEFAUT_OLLAMA_MODEL is not set)
+    # ollama pull orca-mini
+    ```
+3.  **Ensure Ollama Service is Running**: Usually starts automatically after install. If not, run `ollama serve`.
+4.  **(Optional) Set Environment Variable**: You can specify the default model for the tools by setting the `DEFAULT_OLLAMA_MODEL` environment variable (e.g., `export DEFAULT_OLLAMA_MODEL="deepseek-r1:8b"`). If not set, it defaults to `orca-mini:latest`.
 
 ### Usage Examples
 
@@ -68,6 +88,13 @@ This will create the `workspace` directory (if it doesn't exist, or clean it if 
 **Task Requiring Dynamic Scraping (needs Xvfb):**
 ```bash
 xvfb-run -a python run_task.py dynamic_scrape_test
+```
+
+**Task Requiring Local LLM (Ollama):**
+```bash
+# Ensure Ollama is running with a model like 'deepseek-r1:8b' or 'orca-mini'
+# export DEFAULT_OLLAMA_MODEL="deepseek-r1:8b" # Optional: to set your preferred model
+python run_task.py local_llm_test_summary
 ```
 
 ## Development of the FastAPI Backend
