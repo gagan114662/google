@@ -61,6 +61,8 @@ python run_task.py <task_name>
 *   **`local_llm_test_summary`**: Tests text summarization using a locally running Ollama model. **Requires Ollama to be running with a model (e.g., `deepseek-r1:8b` or `orca-mini:latest`).**
 *   **`scrape_forums --query \"your search query\"`**: A task that attempts to find forum discussions related to a query, scrape content from a couple of links, summarize them using the local LLM, and save a report. **Requires `xvfb-run` and Ollama.**
     *   **VERY IMPORTANT NOTE**: The reliability of finding and parsing forum links using the built-in Google Search scraping (`search_google_dynamic` and `search_google`) is **extremely low and currently often fails to return results**. Google's Search Engine Results Page (SERP) is heavily protected and changes frequently, making direct scraping very difficult. This task is included as a demonstration of orchestrating multiple tools/skills, but its success heavily depends on the search step, which is unreliable. For robust search, a dedicated Search API would be necessary.
+*   **`auto_goal --goal \"your natural language goal\"`**: (EXPERIMENTAL) Attempts to achieve a user-defined goal by first using a local LLM (via Ollama) to generate a plan of tool/skill calls, and then executing that plan. **Requires Ollama and potentially `xvfb-run`** if the generated plan includes dynamic web scraping.
+    *   **Note**: The quality and success of the generated plan depend heavily on the capability of the configured local LLM and the clarity of the goal. The tool/skill manifest used by the planner is in `app/core/tool_manifest.py`.
 
 ### Setup for Local LLM (Ollama)
 
@@ -102,6 +104,15 @@ python run_task.py local_llm_test_summary
 **Scraping Forums Task (requires Xvfb and Ollama):**
 ```bash
 xvfb-run -a python run_task.py scrape_forums --query "best programming languages for beginners"
+```
+
+**Autonomous Goal Execution Task (requires Ollama, and Xvfb if web scraping is planned):**
+```bash
+# Ensure Ollama is running with a model.
+# If the plan involves dynamic web scraping, use xvfb-run:
+# xvfb-run -a python run_task.py auto_goal --goal "Summarize the main content of example.com and save it to summary.txt"
+
+python run_task.py auto_goal --goal "Create a text file named 'test_goal.txt' with the content 'Hello from auto_goal task.'"
 ```
 
 ## Development of the FastAPI Backend
